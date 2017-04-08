@@ -11,9 +11,13 @@ How to setup
 Prerequisites
 
 Linux
+
 Python 2.0 
+
 NVIDIA GPU + CUDA 8.0 + CuDNNv5.1
+
 TensorFlow 1.0
+
 
 
 Getting Started
@@ -23,12 +27,13 @@ git clone https://github.com/duxingren14/DualGAN.git
 cd DualGAN
 
 Train the model
+
 python main.py --phase train
 
 Test the model:
+
 python main.py --phase test
 
-DualGAN/0.png
 
 Results
 
@@ -45,7 +50,6 @@ maps: https://mega.nz/#!r8xwCBCD!lNBrY_2QO6pyUJziGj7ikPheUL_yXA8xGXFlM3GPL3c
 Experimental results:
 
 [[https://github.com/duxingren14/DualGAN/blob/master/0.png]]
- Contact a human
 
 
 
