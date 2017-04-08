@@ -19,11 +19,9 @@ TensorFlow 1.0
 Getting Started
 
 Clone this repo:
-git clone git@github.com:yenchenlin/.git
+git clone https://github.com/duxingren14/DualGAN.git
 cd DualGAN
 
-Download the dataset (script borrowed from torch code):
-bash ./download_dataset.sh facades
 Train the model
 python main.py --phase train
 
@@ -35,6 +33,12 @@ Results
 
 
 A portion of Datasets are available from:
+
+facades: http://cmp.felk.cvut.cz/~tylecr1/facade/
+
+sketch: http://mmlab.ie.cuhk.edu.hk/archive/cufsf/
+
+maps: https://mega.nz/#!r8xwCBCD!lNBrY_2QO6pyUJziGj7ikPheUL_yXA8xGXFlM3GPL3c
 
 
 Experimental results:
