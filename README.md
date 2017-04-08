@@ -17,15 +17,15 @@ TensorFlow 1.0
 
 
 
-Getting Started
+#Getting Started
 
 Clone this repo: git clone https://github.com/duxingren14/DualGAN.git cd DualGAN
 
-Train the model
+#Train the model
 
 python main.py --phase train
 
-Test the model:
+#Test the model:
 
 python main.py --phase test
 
