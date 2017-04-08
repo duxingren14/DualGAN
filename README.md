@@ -44,7 +44,7 @@ maps: https://mega.nz/#!r8xwCBCD!lNBrY_2QO6pyUJziGj7ikPheUL_yXA8xGXFlM3GPL3c
 
 Experimental results:
 
-[[https://github.com/duxingren14/DualGAN//1.png|alt=architecture]]
+[[https://github.com/duxingren14/DualGAN/blob/master/0.png]]
  Contact a human
 
 
