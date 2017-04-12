@@ -14,7 +14,7 @@ DualGAN: unsupervised dual learning for image-to-image translation
 
 Linux
 
-Python 2.0 
+Python 2.0  (with numpy, scipy)
 
 NVIDIA GPU + CUDA 8.0 + CuDNNv5.1
 
