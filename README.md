@@ -14,7 +14,11 @@ DualGAN: unsupervised dual learning for image-to-image translation
 
 Linux
 
-Python 2.0  (with numpy, scipy)
+Python 
+
+numpy
+
+scipy
 
 NVIDIA GPU + CUDA 8.0 + CuDNNv5.1
 
@@ -32,11 +36,11 @@ cd DualGAN
 
 Train the model
 
-python main.py --phase train
+python main.py --phase train --dataset_name dataset_name
 
 Test the model:
 
-python main.py --phase test
+python main.py --phase test --dataset_name dataset_name
 
 
 
