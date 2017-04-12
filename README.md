@@ -73,4 +73,4 @@ maps: https://mega.nz/#!r8xwCBCD!lNBrY_2QO6pyUJziGj7ikPheUL_yXA8xGXFlM3GPL3c
 
 # Acknowledgments
 
-Codes are built on the top of pix2pix and DCGAN-tensorflow. Thanks for their precedent contributions!
+Codes are built on the top of pix2pix-tensorflow and DCGAN-tensorflow. Thanks for their precedent contributions!
