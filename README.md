@@ -34,7 +34,7 @@ git clone https://github.com/duxingren14/DualGAN.git
 
 cd DualGAN
 
-Train the model
+Train the model:
 
 python main.py --phase train --dataset_name dataset_name
 
