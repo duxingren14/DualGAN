@@ -34,9 +34,13 @@ git clone https://github.com/duxingren14/DualGAN.git
 
 cd DualGAN
 
+To download datasets, run:
+
+bash ./datasets/download_dataset.sh
+
 Train the model:
 
-python main.py --phase train --dataset_name dataset_name
+python main.py --phase train --dataset_name dataset_name 
 
 Test the model:
 
@@ -53,11 +57,11 @@ sketch: http://mmlab.ie.cuhk.edu.hk/archive/cufsf/
 
 maps: https://mega.nz/#!r8xwCBCD!lNBrY_2QO6pyUJziGj7ikPheUL_yXA8xGXFlM3GPL3c
 
-oil-chinese:  http://www.cs.mun.ca/~yz7241/, jump to http://www.cs.mun.ca/~yz7241/dataset/dualgan-dataset.zip
+oil-chinese:  http://www.cs.mun.ca/~yz7241/, jump to http://www.cs.mun.ca/~yz7241/dataset/
 
-material-transfer: http://www.cs.mun.ca/~yz7241/
+material-transfer: http://www.cs.mun.ca/~yz7241/dataset/
 
-day-night: http://www.cs.mun.ca/~yz7241/
+day-night: http://www.cs.mun.ca/~yz7241/dataset/
 
 
 # Experimental results:
