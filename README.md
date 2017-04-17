@@ -34,9 +34,13 @@ git clone https://github.com/duxingren14/DualGAN.git
 
 cd DualGAN
 
+To download datasets, run:
+
+./datasets/download_dataset.sh
+
 Train the model:
 
-python main.py --phase train --dataset_name dataset_name
+python main.py --phase train --dataset_name dataset_name 
 
 Test the model:
 
