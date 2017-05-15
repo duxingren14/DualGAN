@@ -12,8 +12,8 @@ from utils import *
 class DualNet(object):
     def __init__(self, sess, image_size=128, batch_size=1,fcn_filter_dim = 64,  \
                  input_channels_A = 3, input_channels_B = 3, dataset_name='facades', \
-                 checkpoint_dir=None, lambda_A = 200, lambda_B = 200, lambda_pair=200,\
-                 sample_dir=None, loss_metric = 'L1', network_type='fcn_1', use_labeled_data=False,\
+                 checkpoint_dir=None, lambda_A = 200, lambda_B = 200, \
+                 sample_dir=None, loss_metric = 'L1', \
                  clamp = 0.01, n_critic = 3, flip = False):
         """
 
@@ -29,11 +29,9 @@ class DualNet(object):
         self.n_critic = n_critic
         self.df_dim = fcn_filter_dim
         self.flip = flip
-        self.use_labeled_data = (use_labeled_data == 'semi')
         
         self.lambda_A = lambda_A
         self.lambda_B = lambda_B
-        self.lambda_pair = lambda_pair
         
         self.sess = sess
         self.is_grayscale_A = (input_channels_A == 1)
@@ -43,7 +41,6 @@ class DualNet(object):
         #self.L1_lambda = L1_lambda
 
         self.fcn_filter_dim = fcn_filter_dim
-        self.network_type = network_type
         
         self.input_channels_A = input_channels_A
         self.input_channels_B = input_channels_B
@@ -56,10 +53,10 @@ class DualNet(object):
         
         #directory name for output and logs saving
         self.dir_name = \
-        "%s-batch_sz_%s-img_sz_%s-fltr_dim_%d-%s-%s-lambda_ABp_%s_%s_%s-c_%s-n_critic_%s-semi_%s" % \
+        "%s-batch_sz_%s-img_sz_%s-fltr_dim_%d-%s-lambda_AB_%s_%s-c_%s-n_critic_%s" % \
         (self.dataset_name, self.batch_size, self.image_size,self.fcn_filter_dim,\
-        self.loss_metric, self.network_type, self.lambda_A, self.lambda_B, \
-        self.lambda_pair, self.clamp, self.n_critic, self.use_labeled_data) 
+        self.loss_metric, self.lambda_A, self.lambda_B, \
+        self.clamp, self.n_critic) 
         
         self.build_model()
 
@@ -73,81 +70,41 @@ class DualNet(object):
                                         [self.batch_size, self.image_size, self.image_size,
                                          self.input_channels_B ],
                                         name='input_images_of_B_network')
-        self.real_PA = tf.placeholder(tf.float32,
-                                        [self.batch_size, self.image_size, self.image_size,
-                                         self.input_channels_A ],
-                                        name='input_images_of_A_network')
-        self.real_PB = tf.placeholder(tf.float32,
-                                        [self.batch_size, self.image_size, self.image_size,
-                                         self.input_channels_B ],
-                                        name='input_images_of_B_network')
+        
     ###  define graphs
-        #with tf.device('/gpu:0'):
         self.translated_A = self.A_g_net(self.real_A, reuse = False)
         self.A_D_predictions = self.A_d_net(self.translated_A, reuse = False)
     
-        #with tf.device('/gpu:1'):
         self.translated_B = self.B_g_net(self.real_B, reuse = False)
         self.B_D_predictions = self.B_d_net(self.translated_B, reuse = False)
-        #self.predictions_PAB_pair = self.C_d_net(tf.concat(3, [self.real_PA,self.real_PB]), reuse = False)
     
     ### define loss
         self.recover_A = self.B_g_net(self.translated_A, reuse = True)
         self.recover_B = self.A_g_net(self.translated_B, reuse = True)
-        #self.translated_PA = self.A_g_net(self.real_PA, reuse = True)
-        #self.translated_PB = self.B_g_net(self.real_PB, reuse = True)
+
         
         if self.loss_metric == 'L1':
             self.A_loss = tf.reduce_mean(tf.abs(self.recover_A - self.real_A))
             self.B_loss = tf.reduce_mean(tf.abs(self.recover_B - self.real_B))
-            #self.loss_PAB  = tf.reduce_mean(tf.abs(self.real_PA - self.translated_PB)) + \
-            #tf.reduce_mean(tf.abs(self.real_PB - self.translated_PA))
         elif self.loss_metric == 'L2':
             self.A_loss = tf.reduce_mean(tf.square(self.recover_A - self.real_A))
             self.B_loss = tf.reduce_mean(tf.square(self.recover_B - self.real_B))
-            #self.loss_PAB = tf.reduce_mean(tf.square(self.real_PA - self.translated_PB)) +\
-            #tf.reduce_mean(tf.square(self.real_PB - self.translated_PA))
         
         self.A_D_predictions_ = self.A_d_net(self.real_B, reuse = True)
         self.A_d_loss_real = tf.reduce_mean(-self.A_D_predictions_)
-        self.A_d_loss_fake = tf.reduce_mean(self.A_D_predictions) # + tf.reduce_mean(self.A_D_predictions_2)
+        self.A_d_loss_fake = tf.reduce_mean(self.A_D_predictions) 
         
         self.A_d_loss = self.A_d_loss_fake + self.A_d_loss_real
         self.A_g_loss = tf.reduce_mean(-self.A_D_predictions) + self.lambda_B * (self.B_loss )
 
         self.B_D_predictions_ = self.B_d_net(self.real_A, reuse = True)
         self.B_d_loss_real = tf.reduce_mean(-self.B_D_predictions_)
-        self.B_d_loss_fake = tf.reduce_mean(self.B_D_predictions) #+ tf.reduce_mean(self.B_D_predictions_2)
+        self.B_d_loss_fake = tf.reduce_mean(self.B_D_predictions) 
         
         self.B_d_loss = self.B_d_loss_fake + self.B_d_loss_real
         self.B_g_loss = tf.reduce_mean(-self.B_D_predictions) + self.lambda_A * (self.A_loss )
 
-        
-        #predictions_A_pair = self.C_d_net(tf.concat(3, [self.real_A,self.translated_A]), reuse = True)
-        #predictions_B_pair = self.C_d_net(tf.concat(3, [self.translated_B,self.real_B]), reuse = True)
-        #predictions_PA_pair = self.C_d_net(tf.concat(3, [self.real_PA,self.translated_PA]), reuse = True)
-        #predictions_PB_pair = self.C_d_net(tf.concat(3, [self.translated_PB,self.real_PB]), reuse = True)
-        
-        
-        #self.C_d_loss_fake = tf.reduce_mean(predictions_A_pair)+ \
-        #    tf.reduce_mean(predictions_B_pair)+ \
-        #    tf.reduce_mean(predictions_PA_pair)+ \
-        #    tf.reduce_mean(predictions_PB_pair)
-        #self.C_d_loss_real = tf.mul(4.0,  tf.reduce_mean(-self.predictions_PAB_pair)) 
-        #self.C_d_loss = self.C_d_loss_fake + self.C_d_loss_real\
-         
-
-        #self.g_loss_pair = \
-        #tf.reduce_mean(-predictions_A_pair)+ \
-        #tf.reduce_mean(-predictions_B_pair)+ \
-        #tf.reduce_mean(-predictions_PA_pair)+ \
-        #tf.reduce_mean(-predictions_PB_pair)+ \
-        #self.lambda_pair * self.loss_PAB 
-        
-        #if self.use_labeled_data:
-            #self.d_loss = self.A_d_loss + self.B_d_loss + self.C_d_loss
-            #self.g_loss = self.A_g_loss + self.B_g_loss + self.g_loss_pair
-        #else:
+       
         self.d_loss = self.A_d_loss + self.B_d_loss
         self.g_loss = self.A_g_loss + self.B_g_loss
         """
@@ -175,15 +132,13 @@ class DualNet(object):
 
         self.A_d_vars = [var for var in t_vars if 'A_d_' in var.name]
         self.B_d_vars = [var for var in t_vars if 'B_d_' in var.name]
-        #self.C_d_vars = [var for var in t_vars if 'C_d_' in var.name]
         
         self.A_g_vars = [var for var in t_vars if 'A_g_' in var.name]
         self.B_g_vars = [var for var in t_vars if 'B_g_' in var.name]
         
-        if self.use_labeled_data:
-            self.d_vars = self.A_d_vars + self.B_d_vars + self.C_d_vars
-        else:
-            self.d_vars = self.A_d_vars + self.B_d_vars
+
+        self.d_vars = self.A_d_vars + self.B_d_vars 
+
         self.g_vars = self.A_g_vars + self.B_g_vars
         
         self.saver = tf.train.Saver()
@@ -239,7 +194,8 @@ class DualNet(object):
         if self.load(self.checkpoint_dir):
             print(" [*] Load SUCCESS")
         else:
-            print(" [!] Load failed...")
+            print(" Load failed...neglected")
+            print(" start training...")
 
         for epoch in xrange(args.epoch):
             data_A = glob('./datasets/{}/train/A/*.jpg'.format(self.dataset_name))
@@ -247,22 +203,17 @@ class DualNet(object):
             np.random.shuffle(data_A)
             np.random.shuffle(data_B)
             batch_idxs = min(len(data_A), len(data_B)) // (self.batch_size*self.n_critic)
-            if self.use_labeled_data:
-                data_PAB = glob('./datasets/{}/train/AB/*.jpg'.format(self.dataset_name))
-                np.random.shuffle(data_PAB)
-                batch_num_PAB = len(data_PAB)// (self.batch_size*self.n_critic)
-            
+            print('[*] training data loaded successfully')
+            print("#data_A: %d  #data_B:%d" %(len(data_A),len(data_B)))
+            print('[*] run optimizor...')
+
             for idx in xrange(0, batch_idxs):
                 imgA_batch_list = [self.load_training_imgs(data_A, idx+i) for i in xrange(self.n_critic)]
                 imgB_batch_list = [self.load_training_imgs(data_B, idx+i) for i in xrange(self.n_critic)]
-                if self.use_labeled_data:
-                    imgPAB_batch_list = [self.load_pair_imgs(data_PAB, idx+i, batch_num_PAB) for i in xrange(self.n_critic)]
-                else:
-                    imgPAB_batch_list = []
                 
                 print("Epoch: [%2d] [%4d/%4d]"%(epoch, idx, batch_idxs))
                 counter = counter + 1
-                self.run_optim(imgA_batch_list, imgB_batch_list, imgPAB_batch_list, counter, start_time)
+                self.run_optim(imgA_batch_list, imgB_batch_list, counter, start_time)
 
                 if np.mod(counter, 100) == 1:
                     self.sample_shotcut(args.sample_dir, epoch, idx, batch_idxs)
@@ -287,17 +238,11 @@ class DualNet(object):
         
         return batch_imgs_AB
         
-    def run_optim(self,imgA_batch_list, imgB_batch_list,imgPAB_batch_list,  counter, start_time):
+    def run_optim(self,imgA_batch_list, imgB_batch_list,  counter, start_time):
         for i in xrange(self.n_critic):
             batch_A_images = imgA_batch_list[i]
             batch_B_images = imgB_batch_list[i]
-            if self.use_labeled_data:
-                batch_PAB_images = imgPAB_batch_list[i]
-                _, Adfake,Adreal,Bdfake,Bdreal, Cdfake, Cdreal, Ad, Bd, Cd, summary_str = \
-                        self.sess.run([self.d_optim, self.A_d_loss_fake, self.A_d_loss_real, self.B_d_loss_fake, self.B_d_loss_real, self.C_d_loss_fake, self.C_d_loss_real, self.A_d_loss, self.B_d_loss, self.C_d_loss, self.d_loss_sum], \
-                        feed_dict = {self.real_A: batch_A_images, self.real_B: batch_B_images, self.real_PA:batch_PAB_images[:,:,:,0:self.input_channels_A], self.real_PB:batch_PAB_images[:,:,:,self.input_channels_A:]})
-            else:
-                _, Adfake,Adreal,Bdfake,Bdreal, Ad, Bd, summary_str = \
+            _, Adfake,Adreal,Bdfake,Bdreal, Ad, Bd, summary_str = \
                         self.sess.run([self.d_optim, self.A_d_loss_fake, self.A_d_loss_real, self.B_d_loss_fake, self.B_d_loss_real, self.A_d_loss, self.B_d_loss, self.d_loss_sum], \
                         feed_dict = {self.real_A: batch_A_images, self.real_B: batch_B_images})
             #self.writer.add_summary(summary_str, counter)
@@ -305,27 +250,17 @@ class DualNet(object):
         
         batch_A_images = imgA_batch_list[np.random.randint(self.n_critic, size=1)[0]]
         batch_B_images = imgB_batch_list[np.random.randint(self.n_critic, size=1)[0]]
-        if self.use_labeled_data:
-            batch_PAB_images = imgPAB_batch_list[np.random.randint(self.n_critic, size=1)[0]]
-            _, Ag, Bg, gloss_pair, Aloss, Bloss, PAB_loss,\
-            summary_str = self.sess.run([self.g_optim, self.A_g_loss, self.B_g_loss, \
-            self.g_loss_pair, self.A_loss, self.B_loss, self.loss_PAB, self.g_loss_sum],\
-            feed_dict={ self.real_A: batch_A_images, self.real_B: batch_B_images, \
-            self.real_PA:batch_PAB_images[:,:,:,0:self.input_channels_A],\
-            self.real_PB:batch_PAB_images[:,:,:,self.input_channels_A:]})
-        else:
-            _, Ag, Bg, Aloss, Bloss, summary_str = \
+        _, Ag, Bg, Aloss, Bloss, summary_str = \
             self.sess.run([self.g_optim, self.A_g_loss, self.B_g_loss, self.A_loss, \
             self.B_loss, self.g_loss_sum], feed_dict={ self.real_A: batch_A_images, \
             self.real_B: batch_B_images})
-            Cdfake = Cdreal = Cd = gloss_pair = PAB_loss = 0.0
 
         #self.writer.add_summary(summary_str, counter)
-        print("time: %4.4f, A_d_loss: %.2f, A_g_loss: %.2f, B_d_loss: %.2f, B_g_loss: %.2f, C_d_loss: %.2f, g_loss_pair: %.2f, A_loss: %.5f, B_loss: %.5f, PAB_loss: %.5f" \
-                    % (time.time() - start_time, Ad,Ag,Bd,Bg, Cd, gloss_pair, \
-                        Aloss, Bloss, PAB_loss))
-        print("A_d_loss_fake: %.2f, A_d_loss_real: %.2f, B_d_loss_fake: %.2f, B_g_loss_real: %.2f, C_d_loss_fake: %.2f, c_d_loss_real: %.2f" \
-                    % (Adfake,Adreal,Bdfake,Bdreal, Cdfake, Cdreal))
+        print("time: %4.4f, A_d_loss: %.2f, A_g_loss: %.2f, B_d_loss: %.2f, B_g_loss: %.2f,  A_loss: %.5f, B_loss: %.5f" \
+                    % (time.time() - start_time, Ad,Ag,Bd,Bg, \
+                        Aloss, Bloss))
+        print("A_d_loss_fake: %.2f, A_d_loss_real: %.2f, B_d_loss_fake: %.2f, B_g_loss_real: %.2f" \
+                    % (Adfake,Adreal,Bdfake,Bdreal))
 
 
     def discriminator(self, image,  y=None, prefix='A_', reuse=False):
@@ -353,9 +288,6 @@ class DualNet(object):
     
     def B_d_net(self, imgs, y = None, reuse = False):
         return self.discriminator(imgs, prefix = 'B_', reuse = reuse)
-        
-    def C_d_net(self, imgs, y = None, reuse = False):
-        return self.discriminator(imgs, prefix = 'C_', reuse = reuse)
         
     def A_g_net(self, imgs, reuse=False):
         return self.fcn(imgs, prefix='A_g_', reuse = reuse)
@@ -395,50 +327,46 @@ class DualNet(object):
             self.d1, self.d1_w, self.d1_b = deconv2d(tf.nn.relu(e8),
                 [self.batch_size, s128, s128, self.fcn_filter_dim*8], name=prefix+'d1', with_w=True)
             d1 = tf.nn.dropout(batch_norm(self.d1, name = prefix+'bn_d1'), 0.5)
-            if int(self.network_type.split('_')[1]) < 128:
-                d1 = tf.concat([d1, e7],3)
+            d1 = tf.concat([d1, e7],3)
             # d1 is (2 x 2 x self.fcn_filter_dim*8*2)
 
             self.d2, self.d2_w, self.d2_b = deconv2d(tf.nn.relu(d1),
                 [self.batch_size, s64, s64, self.fcn_filter_dim*8], name=prefix+'d2', with_w=True)
             d2 = tf.nn.dropout(batch_norm(self.d2, name = prefix+'bn_d2'), 0.5)
-            if int(self.network_type.split('_')[1]) < 64:
-                d2 = tf.concat([d2, e6],3)
+
+            d2 = tf.concat([d2, e6],3)
             # d2 is (4 x 4 x self.fcn_filter_dim*8*2)
 
             self.d3, self.d3_w, self.d3_b = deconv2d(tf.nn.relu(d2),
                 [self.batch_size, s32, s32, self.fcn_filter_dim*8], name=prefix+'d3', with_w=True)
             d3 = tf.nn.dropout(batch_norm(self.d3, name = prefix+'bn_d3'), 0.5)
-            if int(self.network_type.split('_')[1]) < 32:
-                d3 = tf.concat([d3, e5],3)
+
+            d3 = tf.concat([d3, e5],3)
             # d3 is (8 x 8 x self.fcn_filter_dim*8*2)
 
             self.d4, self.d4_w, self.d4_b = deconv2d(tf.nn.relu(d3),
                 [self.batch_size, s16, s16, self.fcn_filter_dim*8], name=prefix+'d4', with_w=True)
             d4 = batch_norm(self.d4, name = prefix+'bn_d4')
-            if int(self.network_type.split('_')[1]) < 16:
-                d4 = tf.concat([d4, e4],3)
+
+            d4 = tf.concat([d4, e4],3)
             # d4 is (16 x 16 x self.fcn_filter_dim*8*2)
 
             self.d5, self.d5_w, self.d5_b = deconv2d(tf.nn.relu(d4),
                 [self.batch_size, s8, s8, self.fcn_filter_dim*4], name=prefix+'d5', with_w=True)
             d5 = batch_norm(self.d5, name = prefix+'bn_d5')
-            if int(self.network_type.split('_')[1]) < 8:
-                d5 = tf.concat([d5, e3],3)
+            d5 = tf.concat([d5, e3],3)
             # d5 is (32 x 32 x self.fcn_filter_dim*4*2)
 
             self.d6, self.d6_w, self.d6_b = deconv2d(tf.nn.relu(d5),
                 [self.batch_size, s4, s4, self.fcn_filter_dim*2], name=prefix+'d6', with_w=True)
             d6 = batch_norm(self.d6, name = prefix+'bn_d6')
-            if int(self.network_type.split('_')[1]) < 4:
-                d6 = tf.concat([d6, e2],3)
+            d6 = tf.concat([d6, e2],3)
             # d6 is (64 x 64 x self.fcn_filter_dim*2*2)
 
             self.d7, self.d7_w, self.d7_b = deconv2d(tf.nn.relu(d6),
                 [self.batch_size, s2, s2, self.fcn_filter_dim], name=prefix+'d7', with_w=True)
             d7 = batch_norm(self.d7, name = prefix+'bn_d7')
-            if int(self.network_type.split('_')[1]) < 2:
-                d7 = tf.concat([d7, e1],3)
+            d7 = tf.concat([d7, e1],3)
             # d7 is (128 x 128 x self.fcn_filter_dim*1*2)
 
             if prefix == 'B_g_':
@@ -447,7 +375,6 @@ class DualNet(object):
                 self.d8, self.d8_w, self.d8_b = deconv2d(tf.nn.relu(d7),
                 [self.batch_size, s, s, self.input_channels_B], name=prefix+'d8', with_w=True)
              # d8 is (256 x 256 x output_c_dim)
-
             return tf.nn.tanh(self.d8)
     
     
@@ -493,11 +420,19 @@ class DualNet(object):
             try:
                 self.test_domain(args, test_log, type = 'AB')
             except ValueError:
-                self.test_domain(args, test_log, type = 'A')
-                self.test_domain(args, test_log, type = 'B')
+                try:
+                    self.test_domain(args, test_log, type = 'A')
+                except ValueError:
+                    print("ValueError, aborted! ")
+                    print("continuing...")
+                try:
+                    self.test_domain(args, test_log, type = 'B')
+                except ValueError:
+                    print("ValueError, aborted! ")
             test_log.close()
         else:
-            print(" [!] Load failed...")
+            print(" [error] Load failed...")
+            print(" aborted...")
         
     def test_domain(self, args, test_log, type = 'A'):
         sample_files = glob('./datasets/{}/val/{}/*.jpg'.format(self.dataset_name,type))
@@ -521,12 +456,12 @@ class DualNet(object):
             sample = [load_data(sample_file, is_test=True, image_size =self.image_size, flip = args.flip) for sample_file in sample_files]
         else:
             sample = [load_data_pair(sample_file, img_size =self.image_size) for sample_file in sample_files] 
+        print("#images loaded: %d"%(len(sample)))
         sample_images = np.reshape(np.array(sample).astype(np.float32),(len(sample_files),self.image_size, self.image_size,-1))
         sample_images = [sample_images[i:i+self.batch_size]
                          for i in xrange(0, len(sample_images), self.batch_size)]
         sample_images = np.array(sample_images)
-        print(sample_images.shape)
-
+        
         # test input samples
         if type == 'A':
             aloss_sum = 0.0;
@@ -535,7 +470,7 @@ class DualNet(object):
             for i in xrange(0, len(sample_images), self.batch_size):
                 idx = i+1
                 sample_A_img = np.reshape(np.array(sample_images[i:i+self.batch_size]), (self.batch_size,self.image_size, self.image_size,-1))
-                print("sampling A image ", idx)
+                print("testing A image %d"%(idx))
                 translated_A_value, recover_A_value, aloss, a_d_loss, b_d_realloss = self.sess.run(
                     [self.translated_A, self.recover_A, self.A_loss, self.A_d_loss_fake, self.B_d_loss_real],
                     feed_dict={self.real_A: sample_A_img}
@@ -559,7 +494,7 @@ class DualNet(object):
             for i in xrange(0, len(sample_images), self.batch_size):
                 idx = i+1
                 sample_B_img = np.reshape(np.array(sample_images[i:i+self.batch_size]), (self.batch_size,self.image_size, self.image_size,-1))
-                print("sampling B image ", idx)
+                print("testing B image %d"%(idx))
 
                 translated_B_value, recover_B_value,  bloss, b_d_loss, a_d_realloss = self.sess.run(
                     [self.translated_B, self.recover_B, self.B_loss, self.B_d_loss_fake, self.A_d_loss_real],
@@ -581,13 +516,11 @@ class DualNet(object):
         elif type == 'AB':
             aloss_sum = a_d_loss_sum = b_d_realloss_sum = 0.0
             bloss_sum = b_d_loss_sum = a_d_realloss_sum = 0.0
-            print(sample_images.shape)
             for i in xrange(0, len(sample_images), self.batch_size):
                 idx = i+1
                 Aimgs = np.array(sample_images[i:i+self.batch_size,:,:,:,0:self.input_channels_A])
-                print(Aimgs.shape)
                 sample_A_img = np.reshape(Aimgs, (self.batch_size,self.image_size, self.image_size,-1))
-                print("sampling A image ", idx)
+                print("testing A image %d"%(idx))
                 translated_A_value, recover_A_value, aloss, a_d_loss, b_d_realloss = self.sess.run(
                     [self.translated_A, self.recover_A, self.A_loss, self.A_d_loss_fake, self.B_d_loss_real],
                     feed_dict={self.real_A: sample_A_img}
@@ -608,7 +541,7 @@ class DualNet(object):
             for i in xrange(0, len(sample_images), self.batch_size):
                 idx = i+1
                 sample_B_img = np.reshape(np.array(sample_images[i:i+self.batch_size,:,:,:,self.input_channels_A:]), (self.batch_size,self.image_size, self.image_size,-1))
-                print("sampling B image ", idx)
+                print("testing B image %d"%(idx))
 
                 translated_B_value, recover_B_value,  bloss, b_d_loss, a_d_realloss = self.sess.run(
                     [self.translated_B, self.recover_B, self.B_loss, self.B_d_loss_fake, self.A_d_loss_real],

@@ -9,7 +9,7 @@ import tensorflow as tf
 parser = argparse.ArgumentParser(description='Argument parser')
 
 """ Arguments related to network architecture"""
-parser.add_argument('--network_type', dest='network_type', default='fcn_4', help='fcn_1,fcn_2,fcn_4,fcn_8, fcn_16, fcn_32, fcn_64, fcn_128')
+#parser.add_argument('--network_type', dest='network_type', default='fcn_4', help='fcn_1,fcn_2,fcn_4,fcn_8, fcn_16, fcn_32, fcn_64, fcn_128')
 parser.add_argument('--image_size', dest='image_size', type=int, default=128, help='size of input images (applicable to both A images and B images)')
 parser.add_argument('--fcn_filter_dim', dest='fcn_filter_dim', type=int, default=64, help='# of fcn filters in first conv layer')
 parser.add_argument('--input_channels_A', dest='input_channels_A', type=int, default=3, help='# of input image channels')
@@ -17,7 +17,7 @@ parser.add_argument('--input_channels_B', dest='input_channels_B', type=int, def
 
 """Arguments related to run mode"""
 parser.add_argument('--phase', dest='phase', default='train', help='train, test')
-parser.add_argument('--use_labeled_data', dest='use_labeled_data',  default='nosemi', help='#semi-supervised learning or unsupervised learning')
+
 
 
 """Arguments related to training"""
@@ -27,11 +27,10 @@ parser.add_argument('--lr', dest='lr', type=float, default=0.00005, help='initia
 parser.add_argument('--beta1', dest='beta1', type=float, default=0.5, help='momentum term of adam')
 parser.add_argument('--flip', dest='flip', type=bool, default=True, help='if flip the images for data argumentation')
 parser.add_argument('--dataset_name', dest='dataset_name', default='facades', help='name of the dataset')
-parser.add_argument('--epoch', dest='epoch', type=int, default=30, help='# of epoch')
+parser.add_argument('--epoch', dest='epoch', type=int, default=50, help='# of epoch')
 parser.add_argument('--batch_size', dest='batch_size', type=int, default=1, help='# images in batch')
 parser.add_argument('--lambda_A', dest='lambda_A', type=float, default=200.0, help='# weights of A recovery loss')
 parser.add_argument('--lambda_B', dest='lambda_B', type=float, default=200.0, help='# weights of B recovery loss')
-parser.add_argument('--lambda_pair', dest='lambda_pair', type=float, default=200.0, help='# weights of pair recovery loss')
 parser.add_argument('--n_critic', dest='n_critic', type=int, default=3, help='#n_critic')
 parser.add_argument('--clamp', dest='clamp', type=float, default=0.01, help='#n_critic')
 
@@ -59,10 +58,10 @@ def main(_):
                         dataset_name=args.dataset_name,input_channels_A = args.input_channels_A, \
 						input_channels_B = args.input_channels_B, flip  = (args.flip == 'True'),\
                         checkpoint_dir=args.checkpoint_dir, sample_dir=args.sample_dir,\
-						network_type = args.network_type, fcn_filter_dim = args.fcn_filter_dim,\
+						fcn_filter_dim = args.fcn_filter_dim,\
 						loss_metric=args.loss_metric, lambda_B=args.lambda_B, \
-						lambda_pair = args.lambda_pair, lambda_A= args.lambda_A, \
-						n_critic = args.n_critic, use_labeled_data = args.use_labeled_data, clamp = args.clamp)
+						lambda_A= args.lambda_A, \
+						n_critic = args.n_critic,  clamp = args.clamp)
 
         if args.phase == 'train':
             model.train(args)
