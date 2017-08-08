@@ -11,39 +11,10 @@ import numpy as np
 import os
 from time import gmtime, strftime
 
-pp = pprint.PrettyPrinter()
+#pp = pprint.PrettyPrinter()
 
-get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
+#get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 
-# -----------------------------
-# new added functions for pix2pix
-
-
-def load_data_pair(image_path, flip=False, is_test=False,img_size = 256):
-    img_A, img_B = load_image_pair(image_path)
-    img_A, img_B = preprocess_A_and_B(img_A, img_B, img_size=img_size)
-
-    img_A = img_A/127.5 - 1.
-    img_B = img_B/127.5 - 1.
-    if len(img_A.shape)<3:
-        img_A = np.expand_dims(img_A, axis=2)
-        img_B = np.expand_dims(img_B, axis=2)
-    img_AB = np.concatenate((img_A, img_B), axis=2)
-    return img_AB
-
-def load_image_pair(image_path):
-    input_img = imread(image_path)
-    w = int(input_img.shape[1])
-    w2 = int(w/2)
-    img_A = input_img[:, 0:w2]
-    img_B = input_img[:, w2:w]
-
-    return img_A, img_B
-    
-def preprocess_A_and_B(img_A, img_B, img_size=256):
-    img_A = scipy.misc.imresize(img_A, [img_size, img_size])
-    img_B = scipy.misc.imresize(img_B, [img_size, img_size])
-    return img_A, img_B
     
 def load_data(image_path, flip=False, is_test=False, image_size = 128):
     img = load_image(image_path)
@@ -63,8 +34,6 @@ def preprocess_img(img, img_size=128, flip=False, is_test=False):
     if (not is_test) and flip and np.random.random() > 0.5:
         img = np.fliplr(img)
     return img
-
-# -----------------------------
 
 def get_image(image_path, image_size, is_crop=True, resize_w=64, is_grayscale = False):
     return transform(imread(image_path, is_grayscale), image_size, is_crop, resize_w)
@@ -112,4 +81,4 @@ def transform(image, npx=64, is_crop=True, resize_w=64):
     return np.array(cropped_image)/127.5 - 1.
 
 def inverse_transform(images):
-    return ((images+1.)*127.5)#/2.
+    return ((images+1.)*127.5)

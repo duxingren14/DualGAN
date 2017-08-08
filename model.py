@@ -10,139 +10,84 @@ from ops import *
 from utils import *
 
 class DualNet(object):
-    def __init__(self, sess, image_size=128, batch_size=1,fcn_filter_dim = 64,  \
-                 input_channels_A = 3, input_channels_B = 3, dataset_name='facades', \
-                 checkpoint_dir=None, lambda_A = 200, lambda_B = 200, \
-                 sample_dir=None, loss_metric = 'L1', \
-                 clamp = 0.01, n_critic = 3, flip = False):
-        """
-
-        Args:
-            sess: TensorFlow session
-            batch_size: The size of batch. Should be specified before training. [1]
-            image_size: (optional) The resolution in pixels of the images. [128]
-            fcn_filter_dim: (optional) Dimension of fcn filters in first conv layer. [64]
-            input_channels_A: (optional) Dimension of input image color of Network A. For grayscale input, set to 1. [3]
-            input_channels_B: (optional) Dimension of output image color of Network B. For grayscale input, set to 1. [3]
-        """
-        self.clamp = clamp
-        self.n_critic = n_critic
+    def __init__(self, sess, image_size=256, batch_size=1,fcn_filter_dim = 64,  \
+                 A_channels = 3, B_channels = 3, dataset_name='facades', \
+                 checkpoint_dir=None, lambda_A = 20., lambda_B = 20., \
+                 sample_dir=None, loss_metric = 'L1', flip = False):
         self.df_dim = fcn_filter_dim
         self.flip = flip
-        
         self.lambda_A = lambda_A
         self.lambda_B = lambda_B
         
         self.sess = sess
-        self.is_grayscale_A = (input_channels_A == 1)
-        self.is_grayscale_B = (input_channels_B == 1)
+        self.is_grayscale_A = (A_channels == 1)
+        self.is_grayscale_B = (B_channels == 1)
         self.batch_size = batch_size
         self.image_size = image_size
-        #self.L1_lambda = L1_lambda
-
         self.fcn_filter_dim = fcn_filter_dim
-        
-        self.input_channels_A = input_channels_A
-        self.input_channels_B = input_channels_B
+        self.A_channels = A_channels
+        self.B_channels = B_channels
         self.loss_metric = loss_metric
-
-        # batch normalization : deals with poor initialization helps gradient flow
 
         self.dataset_name = dataset_name
         self.checkpoint_dir = checkpoint_dir
         
         #directory name for output and logs saving
-        self.dir_name = \
-        "%s-batch_sz_%s-img_sz_%s-fltr_dim_%d-%s-lambda_AB_%s_%s-c_%s-n_critic_%s" % \
-        (self.dataset_name, self.batch_size, self.image_size,self.fcn_filter_dim,\
-        self.loss_metric, self.lambda_A, self.lambda_B, \
-        self.clamp, self.n_critic) 
-        
+        self.dir_name = "%s-img_sz_%s-fltr_dim_%d-%s-lambda_AB_%s_%s" % (
+                    self.dataset_name, 
+                    self.image_size,
+                    self.fcn_filter_dim,
+                    self.loss_metric, 
+                    self.lambda_A, 
+                    self.lambda_B
+                ) 
         self.build_model()
 
     def build_model(self):
     ###    define place holders
-        self.real_A = tf.placeholder(tf.float32,
-                                        [self.batch_size, self.image_size, self.image_size,
-                                         self.input_channels_A ],
-                                        name='input_images_of_A_network')
-        self.real_B = tf.placeholder(tf.float32,
-                                        [self.batch_size, self.image_size, self.image_size,
-                                         self.input_channels_B ],
-                                        name='input_images_of_B_network')
+        self.real_A = tf.placeholder(tf.float32,[self.batch_size, self.image_size, self.image_size,
+                                         self.A_channels ],name='real_A')
+        self.real_B = tf.placeholder(tf.float32, [self.batch_size, self.image_size, self.image_size,
+                                         self.B_channels ], name='real_B')
         
     ###  define graphs
-        self.translated_A = self.A_g_net(self.real_A, reuse = False)
-        self.A_D_predictions = self.A_d_net(self.translated_A, reuse = False)
-    
-        self.translated_B = self.B_g_net(self.real_B, reuse = False)
-        self.B_D_predictions = self.B_d_net(self.translated_B, reuse = False)
-    
-    ### define loss
-        self.recover_A = self.B_g_net(self.translated_A, reuse = True)
-        self.recover_B = self.A_g_net(self.translated_B, reuse = True)
-
+        self.A2B = self.A_g_net(self.real_A, reuse = False)
+        self.B2A = self.B_g_net(self.real_B, reuse = False)
+        self.A2B2A = self.B_g_net(self.A2B, reuse = True)
+        self.B2A2B = self.A_g_net(self.B2A, reuse = True)
         
         if self.loss_metric == 'L1':
-            self.A_loss = tf.reduce_mean(tf.abs(self.recover_A - self.real_A))
-            self.B_loss = tf.reduce_mean(tf.abs(self.recover_B - self.real_B))
+            self.A_loss = tf.reduce_mean(tf.abs(self.A2B2A - self.real_A))
+            self.B_loss = tf.reduce_mean(tf.abs(self.B2A2B - self.real_B))
         elif self.loss_metric == 'L2':
-            self.A_loss = tf.reduce_mean(tf.square(self.recover_A - self.real_A))
-            self.B_loss = tf.reduce_mean(tf.square(self.recover_B - self.real_B))
+            self.A_loss = tf.reduce_mean(tf.square(self.A2B2A - self.real_A))
+            self.B_loss = tf.reduce_mean(tf.square(self.B2A2B - self.real_B))
         
-        self.A_D_predictions_ = self.A_d_net(self.real_B, reuse = True)
-        self.A_d_loss_real = tf.reduce_mean(-self.A_D_predictions_)
-        self.A_d_loss_fake = tf.reduce_mean(self.A_D_predictions) 
-        
-        self.A_d_loss = self.A_d_loss_fake + self.A_d_loss_real
-        self.A_g_loss = tf.reduce_mean(-self.A_D_predictions) + self.lambda_B * (self.B_loss )
+        self.Ad_logits_fake = self.A_d_net(self.A2B, reuse = False)
+        self.Ad_logits_real = self.A_d_net(self.real_B, reuse = True)
+        self.Ad_loss_real = celoss(self.Ad_logits_real, tf.ones_like(self.Ad_logits_real))
+        self.Ad_loss_fake = celoss(self.Ad_logits_fake, tf.zeros_like(self.Ad_logits_fake))
+        self.Ad_loss = self.Ad_loss_fake + self.Ad_loss_real
+        self.Ag_loss = celoss(self.Ad_logits_fake, labels=tf.ones_like(self.Ad_logits_fake))+self.lambda_B * (self.B_loss )
 
-        self.B_D_predictions_ = self.B_d_net(self.real_A, reuse = True)
-        self.B_d_loss_real = tf.reduce_mean(-self.B_D_predictions_)
-        self.B_d_loss_fake = tf.reduce_mean(self.B_D_predictions) 
-        
-        self.B_d_loss = self.B_d_loss_fake + self.B_d_loss_real
-        self.B_g_loss = tf.reduce_mean(-self.B_D_predictions) + self.lambda_A * (self.A_loss )
-
+        self.Bd_logits_fake = self.B_d_net(self.B2A, reuse = False)
+        self.Bd_logits_real = self.B_d_net(self.real_A, reuse = True)
+        self.Bd_loss_real = celoss(self.Bd_logits_real, tf.ones_like(self.Bd_logits_real))
+        self.Bd_loss_fake = celoss(self.Bd_logits_fake, tf.zeros_like(self.Bd_logits_fake))
+        self.Bd_loss = self.Bd_loss_fake + self.Bd_loss_real
+        self.Bg_loss = celoss(self.Bd_logits_fake, tf.ones_like(self.Bd_logits_fake))+self.lambda_A * (self.A_loss)
        
-        self.d_loss = self.A_d_loss + self.B_d_loss
-        self.g_loss = self.A_g_loss + self.B_g_loss
-        """
-        self.translated_A_sum = tf.summary.image("translated_A", self.translated_A)
-        self.translated_B_sum = tf.summary.image("translated_B", self.translated_B)
-        self.recover_A_sum = tf.summary.image("recover_A", self.recover_A)
-        self.recover_B_sum = tf.summary.image("recover_B", self.recover_B)
-        """
-        ### define summary
-        self.A_d_loss_sum = tf.summary.scalar("A_d_loss", self.A_d_loss)
-        self.A_loss_sum = tf.summary.scalar("A_loss", self.A_loss)
-        self.B_d_loss_sum = tf.summary.scalar("B_d_loss", self.B_d_loss)
-        self.B_loss_sum = tf.summary.scalar("B_loss", self.B_loss)
-
-        
-        self.A_g_loss_sum = tf.summary.scalar("A_g_loss", self.A_g_loss)
-        self.B_g_loss_sum = tf.summary.scalar("B_g_loss", self.B_g_loss)
-
-        self.d_loss_sum = tf.summary.merge([self.A_d_loss_sum, self.B_d_loss_sum])
-        self.g_loss_sum = tf.summary.merge([self.A_g_loss_sum, self.B_g_loss_sum, self.A_loss_sum, self.B_loss_sum])
-        
-        
+        self.d_loss = self.Ad_loss + self.Bd_loss
+        self.g_loss = self.Ag_loss + self.Bg_loss
         ## define trainable variables
         t_vars = tf.trainable_variables()
-
         self.A_d_vars = [var for var in t_vars if 'A_d_' in var.name]
         self.B_d_vars = [var for var in t_vars if 'B_d_' in var.name]
-        
         self.A_g_vars = [var for var in t_vars if 'A_g_' in var.name]
         self.B_g_vars = [var for var in t_vars if 'B_g_' in var.name]
-        
-
         self.d_vars = self.A_d_vars + self.B_d_vars 
-
         self.g_vars = self.A_g_vars + self.B_g_vars
-        
         self.saver = tf.train.Saver()
-
 
     def clip_trainable_vars(self, var_list):
         for var in var_list:
@@ -150,28 +95,27 @@ class DualNet(object):
 
     def load_random_samples(self):
         #np.random.choice(
-        data =np.random.choice(glob('./datasets/{}/val/A/*.jpg'.format(self.dataset_name)),self.batch_size)
-        sample_A = [load_data(sample_file, image_size =self.image_size, flip = False) for sample_file in data]
+        sample_files =np.random.choice(glob('./datasets/{}/val/A/*.jpg'.format(self.dataset_name)),self.batch_size)
+        sample_A_imgs = [load_data(f, image_size =self.image_size, flip = False) for f in sample_files]
         
-        data = np.random.choice(glob('./datasets/{}/val/B/*.jpg'.format(self.dataset_name)),self.batch_size)
-        sample_B = [load_data(sample_file, image_size =self.image_size, flip = False) for sample_file in data]
+        sample_files = np.random.choice(glob('./datasets/{}/val/B/*.jpg'.format(self.dataset_name)),self.batch_size)
+        sample_B_imgs = [load_data(f, image_size =self.image_size, flip = False) for f in sample_files]
 
-        sample_A_images = np.reshape(np.array(sample_A).astype(np.float32),(self.batch_size,self.image_size, self.image_size,-1))
-        sample_B_images = np.reshape(np.array(sample_B).astype(np.float32),(self.batch_size,self.image_size, self.image_size,-1))
-        return sample_A_images, sample_B_images
+        sample_A_imgs = np.reshape(np.array(sample_A_imgs).astype(np.float32),(self.batch_size,self.image_size, self.image_size,-1))
+        sample_B_imgs = np.reshape(np.array(sample_B_imgs).astype(np.float32),(self.batch_size,self.image_size, self.image_size,-1))
+        return sample_A_imgs, sample_B_imgs
 
-    def sample_shotcut(self, sample_dir, epoch, idx, batch_idxs):
+    def sample_shotcut(self, sample_dir, epoch_idx, batch_idx):
         sample_A_imgs,sample_B_imgs = self.load_random_samples()
         
-        Ag, recover_A_value, translated_A_value = self.sess.run([self.A_loss, self.recover_A, self.translated_A], feed_dict={self.real_A: sample_A_imgs, self.real_B: sample_B_imgs})
-        
-        Bg, recover_B_value, translated_B_value = self.sess.run([self.B_loss, self.recover_B, self.translated_B], feed_dict={self.real_A: sample_A_imgs, self.real_B: sample_B_imgs})
+        Ag, A2B2A_imgs, A2B_imgs = self.sess.run([self.A_loss, self.A2B2A, self.A2B], feed_dict={self.real_A: sample_A_imgs, self.real_B: sample_B_imgs})
+        Bg, B2A2B_imgs, B2A_imgs = self.sess.run([self.B_loss, self.B2A2B, self.B2A], feed_dict={self.real_A: sample_A_imgs, self.real_B: sample_B_imgs})
 
-        save_images(translated_A_value, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_train_translated_A_{:02d}.png'.format(sample_dir,self.dir_name , epoch, idx, batch_idxs))
-        save_images(recover_A_value, [self.batch_size,1],    './{}/{}/{:06d}_{:04d}_train_recover_A_{:02d}_.png'.format(sample_dir,self.dir_name, epoch,  idx, batch_idxs))
+        save_images(A2B_imgs, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_A2B.png'.format(sample_dir,self.dir_name , epoch_idx, batch_idx))
+        save_images(A2B2A_imgs, [self.batch_size,1],    './{}/{}/{:06d}_{:04d}_A2B2A.png'.format(sample_dir,self.dir_name, epoch_idx,  batch_idx))
         
-        save_images(translated_B_value, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_train_translated_B_{:02d}.png'.format(sample_dir,self.dir_name, epoch, idx,batch_idxs))
-        save_images(recover_B_value, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_train_recover_B_epoch={:02d}.png'.format(sample_dir,self.dir_name, epoch, idx, batch_idxs))
+        save_images(B2A_imgs, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_B2A.png'.format(sample_dir,self.dir_name, epoch_idx, batch_idx))
+        save_images(B2A2B_imgs, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_B2A2B.png'.format(sample_dir,self.dir_name, epoch_idx, batch_idx))
         
         print("[Sample] A_loss: {:.8f}, B_loss: {:.8f}".format(Ag, Bg))
 
@@ -183,87 +127,74 @@ class DualNet(object):
                           
         self.g_optim = tf.train.RMSPropOptimizer(args.lr, decay=decay) \
                           .minimize(self.g_loss, var_list=self.g_vars)          
-        self.clip_d_vars_ops = [val.assign(tf.clip_by_value(val, -self.clamp, self.clamp)) for val in self.d_vars]
         tf.global_variables_initializer().run()
 
         self.writer = tf.summary.FileWriter("./logs/"+self.dir_name, self.sess.graph)
 
-        counter = 1
+        step = 1
         start_time = time.time()
 
         if self.load(self.checkpoint_dir):
             print(" [*] Load SUCCESS")
         else:
-            print(" Load failed...neglected")
+            print(" Load failed...ignored...")
             print(" start training...")
 
-        for epoch in xrange(args.epoch):
+        for epoch_idx in xrange(args.epoch):
             data_A = glob('./datasets/{}/train/A/*.jpg'.format(self.dataset_name))
             data_B = glob('./datasets/{}/train/B/*.jpg'.format(self.dataset_name))
             np.random.shuffle(data_A)
             np.random.shuffle(data_B)
-            batch_idxs = min(len(data_A), len(data_B)) // (self.batch_size*self.n_critic)
+            epoch_size = min(len(data_A), len(data_B)) // (self.batch_size)
             print('[*] training data loaded successfully')
             print("#data_A: %d  #data_B:%d" %(len(data_A),len(data_B)))
             print('[*] run optimizor...')
 
-            for idx in xrange(0, batch_idxs):
-                imgA_batch_list = [self.load_training_imgs(data_A, idx+i) for i in xrange(self.n_critic)]
-                imgB_batch_list = [self.load_training_imgs(data_B, idx+i) for i in xrange(self.n_critic)]
+            for batch_idx in xrange(0, epoch_size):
+                imgA_batch = self.load_training_imgs(data_A, batch_idx)
+                imgB_batch = self.load_training_imgs(data_B, batch_idx)
                 
-                print("Epoch: [%2d] [%4d/%4d]"%(epoch, idx, batch_idxs))
-                counter = counter + 1
-                self.run_optim(imgA_batch_list, imgB_batch_list, counter, start_time)
+                print("Epoch: [%2d] [%4d/%4d]"%(epoch_idx, batch_idx, epoch_size))
+                step = step + 1
+                self.run_optim(imgA_batch, imgB_batch, step, start_time)
 
-                if np.mod(counter, 100) == 1:
-                    self.sample_shotcut(args.sample_dir, epoch, idx, batch_idxs)
+                if np.mod(step, 100) == 1:
+                    self.sample_shotcut(args.sample_dir, epoch_idx, batch_idx)
 
-                if np.mod(counter, args.save_latest_freq) == 2:
-                    self.save(args.checkpoint_dir, counter)
+                if np.mod(step, args.save_freq) == 2:
+                    self.save(args.checkpoint_dir, step)
 
-    def load_training_imgs(self, data, idx):
-        batch_files = data[idx*self.batch_size:(idx+1)*self.batch_size]
-        batch = [load_data(batch_file, image_size =self.image_size, flip = self.flip) for batch_file in batch_files]
+    def load_training_imgs(self, files, idx):
+        batch_files = files[idx*self.batch_size:(idx+1)*self.batch_size]
+        batch_imgs = [load_data(f, image_size =self.image_size, flip = self.flip) for f in batch_files]
                 
-        batch_images = np.reshape(np.array(batch).astype(np.float32),(self.batch_size,self.image_size, self.image_size,-1))
+        batch_imgs = np.reshape(np.array(batch_imgs).astype(np.float32),(self.batch_size,self.image_size, self.image_size,-1))
         
-        return batch_images
+        return batch_imgs
         
-    def load_pair_imgs(self, data, idx, total_num):
-        idx = idx % total_num 
-        batch_files = data[idx*self.batch_size:(idx+1)*self.batch_size]
-        batch = [load_data_pair(batch_file, img_size =self.image_size) for batch_file in batch_files]
-                
-        batch_imgs_AB = np.reshape(np.array(batch).astype(np.float32),(self.batch_size,self.image_size, self.image_size,-1))
-        
-        return batch_imgs_AB
-        
-    def run_optim(self,imgA_batch_list, imgB_batch_list,  counter, start_time):
-        for i in xrange(self.n_critic):
-            batch_A_images = imgA_batch_list[i]
-            batch_B_images = imgB_batch_list[i]
-            _, Adfake,Adreal,Bdfake,Bdreal, Ad, Bd, summary_str = \
-                        self.sess.run([self.d_optim, self.A_d_loss_fake, self.A_d_loss_real, self.B_d_loss_fake, self.B_d_loss_real, self.A_d_loss, self.B_d_loss, self.d_loss_sum], \
-                        feed_dict = {self.real_A: batch_A_images, self.real_B: batch_B_images})
-            #self.writer.add_summary(summary_str, counter)
-            self.sess.run(self.clip_d_vars_ops)
-        
-        batch_A_images = imgA_batch_list[np.random.randint(self.n_critic, size=1)[0]]
-        batch_B_images = imgB_batch_list[np.random.randint(self.n_critic, size=1)[0]]
-        _, Ag, Bg, Aloss, Bloss, summary_str = \
-            self.sess.run([self.g_optim, self.A_g_loss, self.B_g_loss, self.A_loss, \
-            self.B_loss, self.g_loss_sum], feed_dict={ self.real_A: batch_A_images, \
-            self.real_B: batch_B_images})
+    def run_optim(self,batch_A_imgs, batch_B_imgs,  counter, start_time):
+        _, Adfake,Adreal,Bdfake,Bdreal, Ad, Bd = self.sess.run(
+            [self.d_optim, self.Ad_loss_fake, self.Ad_loss_real, self.Bd_loss_fake, self.Bd_loss_real, self.Ad_loss, self.Bd_loss], 
+            feed_dict = {self.real_A: batch_A_imgs, self.real_B: batch_B_imgs})
+        _, Ag, Bg, Aloss, Bloss = self.sess.run(
+            [self.g_optim, self.Ag_loss, self.Bg_loss, self.A_loss, self.B_loss], 
+            feed_dict={ self.real_A: batch_A_imgs, self.real_B: batch_B_imgs})
 
-        #self.writer.add_summary(summary_str, counter)
-        print("time: %4.4f, A_d_loss: %.2f, A_g_loss: %.2f, B_d_loss: %.2f, B_g_loss: %.2f,  A_loss: %.5f, B_loss: %.5f" \
-                    % (time.time() - start_time, Ad,Ag,Bd,Bg, \
-                        Aloss, Bloss))
-        print("A_d_loss_fake: %.2f, A_d_loss_real: %.2f, B_d_loss_fake: %.2f, B_g_loss_real: %.2f" \
-                    % (Adfake,Adreal,Bdfake,Bdreal))
+        _, Ag, Bg, Aloss, Bloss = self.sess.run(
+            [self.g_optim, self.Ag_loss, self.Bg_loss, self.A_loss, self.B_loss], 
+            feed_dict={ self.real_A: batch_A_imgs, self.real_B: batch_B_imgs})
 
+        print("time: %4.4f, Ad: %.2f, Ag: %.2f, Bd: %.2f, Bg: %.2f,  U_diff: %.5f, V_diff: %.5f" \
+                    % (time.time() - start_time, Ad,Ag,Bd,Bg, Aloss, Bloss))
+        print("Ad_fake: %.2f, Ad_real: %.2f, Bd_fake: %.2f, Bg_real: %.2f" % (Adfake,Adreal,Bdfake,Bdreal))
 
-    def discriminator(self, image,  y=None, prefix='A_', reuse=False):
+    def A_d_net(self, imgs, y = None, reuse = False):
+        return self.discriminator(imgs, prefix = 'A_d_', reuse = reuse)
+    
+    def B_d_net(self, imgs, y = None, reuse = False):
+        return self.discriminator(imgs, prefix = 'B_d_', reuse = reuse)
+        
+    def discriminator(self, image,  y=None, prefix='A_d_', reuse=False):
         # image is 256 x 256 x (input_c_dim + output_c_dim)
         with tf.variable_scope(tf.get_variable_scope()) as scope:
             if reuse:
@@ -271,23 +202,16 @@ class DualNet(object):
             else:
                 assert scope.reuse == False
 
-            h0 = lrelu(conv2d(image, self.df_dim, name=prefix+'d_h0_conv'))
+            h0 = lrelu(conv2d(image, self.df_dim, name=prefix+'h0_conv'))
             # h0 is (128 x 128 x self.df_dim)
-            h1 = lrelu(batch_norm(conv2d(h0, self.df_dim*2, name=prefix+'d_h1_conv'), name = prefix+'d_bn1'))
+            h1 = lrelu(batch_norm(conv2d(h0, self.df_dim*2, name=prefix+'h1_conv'), name = prefix+'bn1'))
             # h1 is (64 x 64 x self.df_dim*2)
-            h2 = lrelu(batch_norm(conv2d(h1, self.df_dim*4, name=prefix+'d_h2_conv'), name = prefix+ 'd_bn2'))
+            h2 = lrelu(batch_norm(conv2d(h1, self.df_dim*4, name=prefix+'h2_conv'), name = prefix+ 'bn2'))
             # h2 is (32x 32 x self.df_dim*4)
-            h3 = lrelu(batch_norm(conv2d(h2, self.df_dim*8, d_h=1, d_w=1, name=prefix+'d_h3_conv'), name = prefix+ 'd_bn3'))
-            # h3 is (16 x 16 x self.df_dim*8)
-            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, prefix+'d_h3_lin')
-
+            h3 = lrelu(batch_norm(conv2d(h2, self.df_dim*8, d_h=1, d_w=1, name=prefix+'h3_conv'), name = prefix+ 'bn3'))
+            # h3 is (32 x 32 x self.df_dim*8)
+            h4 = conv2d(h3, 1, d_h=1, d_w=1, name =prefix+'h4')
             return h4
-        
-    def A_d_net(self, imgs, y = None, reuse = False):
-        return self.discriminator(imgs, prefix = 'A_', reuse = reuse)
-    
-    def B_d_net(self, imgs, y = None, reuse = False):
-        return self.discriminator(imgs, prefix = 'B_', reuse = reuse)
         
     def A_g_net(self, imgs, reuse=False):
         return self.fcn(imgs, prefix='A_g_', reuse = reuse)
@@ -370,16 +294,12 @@ class DualNet(object):
             # d7 is (128 x 128 x self.fcn_filter_dim*1*2)
 
             if prefix == 'B_g_':
-                self.d8, self.d8_w, self.d8_b = deconv2d(tf.nn.relu(d7),[self.batch_size, s, s, self.input_channels_A], name=prefix+'d8', with_w=True)
+                self.d8, self.d8_w, self.d8_b = deconv2d(tf.nn.relu(d7),[self.batch_size, s, s, self.A_channels], name=prefix+'d8', with_w=True)
             elif prefix == 'A_g_':
-                self.d8, self.d8_w, self.d8_b = deconv2d(tf.nn.relu(d7),
-                [self.batch_size, s, s, self.input_channels_B], name=prefix+'d8', with_w=True)
+                self.d8, self.d8_w, self.d8_b = deconv2d(tf.nn.relu(d7),[self.batch_size, s, s, self.B_channels], name=prefix+'d8', with_w=True)
              # d8 is (256 x 256 x output_c_dim)
             return tf.nn.tanh(self.d8)
     
-    
-    
-
     def save(self, checkpoint_dir, step):
         model_name = "DualNet.model"
         model_dir = self.dir_name
@@ -417,146 +337,47 @@ class DualNet(object):
                 os.makedirs(test_dir)
             test_log = open(test_dir+'evaluation.txt','a') 
             test_log.write(self.dir_name)
-            try:
-                self.test_domain(args, test_log, type = 'AB')
-            except ValueError:
-                try:
-                    self.test_domain(args, test_log, type = 'A')
-                except ValueError:
-                    print("ValueError, aborted! ")
-                    print("continuing...")
-                try:
-                    self.test_domain(args, test_log, type = 'B')
-                except ValueError:
-                    print("ValueError, aborted! ")
+            self.test_domain(args, test_log, type = 'A')
+            self.test_domain(args, test_log, type = 'B')
             test_log.close()
-        else:
-            print(" [error] Load failed...")
-            print(" aborted...")
         
     def test_domain(self, args, test_log, type = 'A'):
-        sample_files = glob('./datasets/{}/val/{}/*.jpg'.format(self.dataset_name,type))
-        try:
-            n = [int(i) for i in map(lambda x: x.split('/')[-1].split('.jpg')[0], sample_files)]
-            sample_files = [x for (y, x) in sorted(zip(n, sample_files))]
-        except:
-            try:
-                n = [int(i) for i in map(lambda x: x.split('/')[-1].split('.jpg')[0].split('_')[1], sample_files)]
-                sample_files = [x for (y, x) in sorted(zip(n, sample_files))]
-            except:
-                try:
-                    n = [int(i) for i in map(lambda x: x.split('/')[-1].split(').jpg')[0].split('(')[0], sample_files)]
-                    sample_files = [x for (y, x) in sorted(zip(n, sample_files))]
-                except:
-                    n = [int(i) for i in map(lambda x: x.split('/')[-1].split(').jpg')[0].split('(')[1], sample_files)]
-                    sample_files = [x for (y, x) in sorted(zip(n, sample_files))]
+        test_files = glob('./datasets/{}/val/{}/*.jpg'.format(self.dataset_name,type))
         # load testing input
         print("Loading testing images ...")
-        if type != 'AB':
-            sample = [load_data(sample_file, is_test=True, image_size =self.image_size, flip = args.flip) for sample_file in sample_files]
-        else:
-            sample = [load_data_pair(sample_file, img_size =self.image_size) for sample_file in sample_files] 
-        print("#images loaded: %d"%(len(sample)))
-        sample_images = np.reshape(np.array(sample).astype(np.float32),(len(sample_files),self.image_size, self.image_size,-1))
-        sample_images = [sample_images[i:i+self.batch_size]
-                         for i in xrange(0, len(sample_images), self.batch_size)]
-        sample_images = np.array(sample_images)
-        
+        test_imgs = [load_data(f, is_test=True, image_size =self.image_size, flip = args.flip) for f in test_files]
+        print("#images loaded: %d"%(len(test_imgs)))
+        test_imgs = np.reshape(np.asarray(test_imgs).astype(np.float32),(len(test_files),self.image_size, self.image_size,-1))
+        test_imgs = [test_imgs[i*self.batch_size:(i+1)*self.batch_size]
+                         for i in xrange(0, len(test_imgs)//self.batch_size)]
+        test_imgs = np.asarray(test_imgs)
+        test_path = './{}/{}/'.format(args.test_dir, self.dir_name)
         # test input samples
         if type == 'A':
-            aloss_sum = 0.0;
-            a_d_loss_sum = 0.0
-            b_d_realloss_sum = 0.0
-            for i in xrange(0, len(sample_images), self.batch_size):
+            for i in xrange(0, len(test_files)//self.batch_size):
+                filename_o = test_files[i*self.batch_size].split('/')[-1].split('.')[0]
+                print(filename_o)
                 idx = i+1
-                sample_A_img = np.reshape(np.array(sample_images[i:i+self.batch_size]), (self.batch_size,self.image_size, self.image_size,-1))
+                A_imgs = np.reshape(np.array(sample_images[i]), (self.batch_size,self.image_size, self.image_size,-1))
                 print("testing A image %d"%(idx))
-                translated_A_value, recover_A_value, aloss, a_d_loss, b_d_realloss = self.sess.run(
-                    [self.translated_A, self.recover_A, self.A_loss, self.A_d_loss_fake, self.B_d_loss_real],
-                    feed_dict={self.real_A: sample_A_img}
-                )
-                aloss_sum = aloss_sum+ aloss
-                a_d_loss_sum = a_d_loss_sum + a_d_loss
-                b_d_realloss_sum = b_d_realloss_sum + b_d_realloss
-                save_images(sample_A_img, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_real_A.png'.format(args.test_dir, self.dir_name,idx))
-                save_images(translated_A_value, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_translated_A.png'.format(args.test_dir, self.dir_name,idx))
-                save_images(recover_A_value, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_recover_A.png'.format(args.test_dir, self.dir_name,idx))
-            test_log.write('recovery loss of A: %06f \n'%(aloss_sum/sample_images.shape[0]))
-            test_log.write('D_A loss of fake:%.2f \n'%(a_d_loss_sum/sample_images.shape[0]))
-            test_log.write('D_B loss of real:%.2f \n'%(-b_d_realloss_sum/sample_images.shape[0]))
+                print(A_imgs.shape)
+                A2B_imgs, A2B2A_imgs = self.sess.run(
+                    [self.A2B, self.A2B2A],
+                    feed_dict={self.real_A: A_imgs}
+                    )
+                save_images(A_imgs, [self.batch_size, 1], test_path+filename_o+'_realA.png')
+                save_images(A2B_imgs, [self.batch_size, 1], test_path+filename_o+'_A2B.png')
+                save_images(A2B2A_imgs, [self.batch_size, 1], test_path+filename_o+'_A2B2A.png')
         elif type=='B':
-            bloss_sum = 0.0
-            b_d_loss_sum = 0.0
-            a_d_realloss_sum = 0.0
-            for i in xrange(0, len(sample_images), self.batch_size):
+            for i in xrange(0, len(test_files)//self.batch_size):
+                filename_o = test_files[i*self.batch_size].split('/')[-1].split('.')[0]
                 idx = i+1
-                sample_B_img = np.reshape(np.array(sample_images[i:i+self.batch_size]), (self.batch_size,self.image_size, self.image_size,-1))
+                B_imgs = np.reshape(np.array(test_imgs[i]), (self.batch_size,self.image_size, self.image_size,-1))
                 print("testing B image %d"%(idx))
-
-                translated_B_value, recover_B_value,  bloss, b_d_loss, a_d_realloss = self.sess.run(
-                    [self.translated_B, self.recover_B, self.B_loss, self.B_d_loss_fake, self.A_d_loss_real],
-                    feed_dict={self.real_B:sample_B_img}
-                )
-                bloss_sum = bloss_sum+ bloss
-                b_d_loss_sum = b_d_loss_sum + b_d_loss
-                a_d_realloss_sum =a_d_realloss_sum + a_d_realloss
-
-                save_images(sample_B_img, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_real_B.png'.format(args.test_dir, self.dir_name,idx))
-                save_images(translated_B_value, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_translated_B.png'.format(args.test_dir, self.dir_name,idx))
-                save_images(recover_B_value, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_recover_B.png'.format(args.test_dir, self.dir_name,idx))
-            test_log.write('recovery loss of B: %06f\n'%(bloss_sum/sample_images.shape[0]))
-            test_log.write('D_B loss of fake:%.2f\n'%(b_d_loss_sum/sample_images.shape[0]))
-            test_log.write('D_A loss of real:%.2f\n'%(-a_d_realloss_sum/sample_images.shape[0]))
-        elif type == 'AB':
-            aloss_sum = a_d_loss_sum = b_d_realloss_sum = 0.0
-            bloss_sum = b_d_loss_sum = a_d_realloss_sum = 0.0
-            for i in xrange(0, len(sample_images), self.batch_size):
-                idx = i+1
-                Aimgs = np.array(sample_images[i:i+self.batch_size,:,:,:,0:self.input_channels_A])
-                sample_A_img = np.reshape(Aimgs, (self.batch_size,self.image_size, self.image_size,-1))
-                print("testing A image %d"%(idx))
-                translated_A_value, recover_A_value, aloss, a_d_loss, b_d_realloss = self.sess.run(
-                    [self.translated_A, self.recover_A, self.A_loss, self.A_d_loss_fake, self.B_d_loss_real],
-                    feed_dict={self.real_A: sample_A_img}
-                )
-                aloss_sum = aloss_sum+ aloss
-                a_d_loss_sum = a_d_loss_sum + a_d_loss
-                b_d_realloss_sum = b_d_realloss_sum + b_d_realloss
-                save_images(sample_A_img, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_real_A.png'.format(args.test_dir, self.dir_name,idx))
-                save_images(translated_A_value, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_translated_A.png'.format(args.test_dir, self.dir_name,idx))
-                save_images(recover_A_value, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_recover_A.png'.format(args.test_dir, self.dir_name,idx))
-            test_log.write('recovery loss of A: %06f \n'%(aloss_sum/sample_images.shape[0]))
-            test_log.write('D_A loss of fake:%.2f \n'%(a_d_loss_sum/sample_images.shape[0]))
-            test_log.write('D_B loss of real:%.2f \n'%(-b_d_realloss_sum/sample_images.shape[0]))
-            
-            for i in xrange(0, len(sample_images), self.batch_size):
-                idx = i+1
-                sample_B_img = np.reshape(np.array(sample_images[i:i+self.batch_size,:,:,:,self.input_channels_A:]), (self.batch_size,self.image_size, self.image_size,-1))
-                print("testing B image %d"%(idx))
-
-                translated_B_value, recover_B_value,  bloss, b_d_loss, a_d_realloss = self.sess.run(
-                    [self.translated_B, self.recover_B, self.B_loss, self.B_d_loss_fake, self.A_d_loss_real],
-                    feed_dict={self.real_B:sample_B_img}
-                )
-                bloss_sum = bloss_sum+ bloss
-                b_d_loss_sum = b_d_loss_sum + b_d_loss
-                a_d_realloss_sum =a_d_realloss_sum + a_d_realloss
-
-                save_images(sample_B_img, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_real_B.png'.format(args.test_dir, self.dir_name,idx))
-                save_images(translated_B_value, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_translated_B.png'.format(args.test_dir, self.dir_name,idx))
-                save_images(recover_B_value, [self.batch_size, 1],
-                            './{}/{}/{:04d}_test_recover_B.png'.format(args.test_dir, self.dir_name,idx))
-            test_log.write('recovery loss of B: %06f \n'%(bloss_sum/sample_images.shape[0]))
-            test_log.write('D_B loss of fake:%.2f \n'%(b_d_loss_sum/sample_images.shape[0]))
-            test_log.write('D_A loss of real:%.2f \n'%(-a_d_realloss_sum/sample_images.shape[0]))
+                B2A_imgs, B2A2B_imgs = self.sess.run(
+                    [self.B2A, self.B2A2B],
+                    feed_dict={self.real_B:B_imgs}
+                    )
+                save_images(B_imgs, [self.batch_size, 1],test_path+filename_o+'_realB.png')
+                save_images(B2A_imgs, [self.batch_size, 1],test_path+filename_o+'_B2A.png')
+                save_images(B2A2B_imgs, [self.batch_size, 1],test_path+filename_o+'_B2A2B.png')
