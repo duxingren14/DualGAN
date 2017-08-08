@@ -69,21 +69,21 @@ day-night: http://www.cs.mun.ca/~yz7241/dataset/
 
 
 
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_realA.PNG)
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_A2B.PNG)
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_A2B2A.PNG)
+![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_realA.png)
+![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_A2B.png)
+![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_A2B2A.png)
 
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_realA.PNG)
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_A2B.PNG)
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_A2B2A.PNG)
+![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_realA.png)
+![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_A2B.png)
+![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_A2B2A.png)
 
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_realB.PNG)
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_B2A.PNG)
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_B2A2B.PNG)
+![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_realB.png)
+![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_B2A.png)
+![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_B2A2B.png)
 
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_realB.PNG)
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_B2A.PNG)
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_B2A2B.PNG)
+![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_realB.png)
+![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_B2A.png)
+![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_B2A2B.png)
 
 # Acknowledgments
 
