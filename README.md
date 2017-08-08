@@ -67,12 +67,11 @@ day-night: http://www.cs.mun.ca/~yz7241/dataset/
 ![day2night](https://github.com/duxingren14/DualGAN/blob/master/5.PNG)
 ![day2night](https://github.com/duxingren14/DualGAN/blob/master/6.PNG)
 
-
-
+ 
+oil         oil2chinese       oil2chinese2oil     oil         oil2chinese       oil2chinese2oil  
 ![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_realA.png)
 ![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_A2B.png)
 ![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_A2B2A.png)
-
 ![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_realA.png)
 ![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_A2B.png)
 ![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_A2B2A.png)
@@ -80,7 +79,6 @@ day-night: http://www.cs.mun.ca/~yz7241/dataset/
 ![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_realB.png)
 ![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_B2A.png)
 ![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_B2A2B.png)
-
 ![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_realB.png)
 ![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_B2A.png)
 ![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_B2A2B.png)
