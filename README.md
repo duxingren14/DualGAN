@@ -12,17 +12,17 @@ please cite the paper, if the codes has been used for your research.
 
 ## Prerequisites
 
-*Linux
+* Linux
 
-*Python (2.7 or later)
+* Python (2.7 or later)
 
-*numpy
+* numpy
 
-*scipy
+* scipy
 
-*NVIDIA GPU + CUDA 8.0 + CuDNN v5.1
+* NVIDIA GPU + CUDA 8.0 + CuDNN v5.1
 
-*TensorFlow 1.0 or later
+* TensorFlow 1.0 or later
 
 
 # Getting Started
@@ -54,7 +54,7 @@ python main.py --phase train --dataset_name sketch-photo --image_size 256 --epoc
 python main.py --phase test --dataset_name sketch-photo --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 1 --B_channels 1
 ```
 
-##optional
+## optional
 
 Similarly, run experiments on facades dataset with the following commands:
 
