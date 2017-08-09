@@ -1,6 +1,6 @@
 
- # DualGAN
-DualGAN: unsupervised dual learning for image-to-image translation
+ # the codes are based on the ICCV paper about DualGAN
+<a href="https://arxiv.org/abs/1704.02510">DualGAN: unsupervised dual learning for image-to-image translation</a>
 
 # architecture of DualGAN
 
