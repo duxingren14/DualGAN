@@ -34,21 +34,31 @@ git clone https://github.com/duxingren14/DualGAN.git
 
 cd DualGAN
 
-To download datasets, run:
+To download datasets (e.g., sketch-photo), run:
 
-bash ./datasets/download_dataset.sh
+bash ./datasets/download_dataset.sh sketch-photo
 
 Train the model:
 
-python main.py --phase train --dataset_name dataset_name 
+python main.py --phase train --dataset_name sketch-photo --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 1 --B_channels 1
+
 
 Test the model:
 
-python main.py --phase test --dataset_name dataset_name
+python main.py --phase test --dataset_name sketch-photo --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 1 --B_channels 1
 
 
 
-# A portion of Datasets are available from:
+Similarly, run experiments on facades dataset with the following commands:
+
+bash ./datasets/download_dataset.sh facades
+
+python main.py --phase train --dataset_name facades --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 3 --B_channels 3
+
+python main.py --phase test --dataset_name facades --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 3 --B_channels 3
+
+
+# Some of Datasets are available from:
 
 facades: http://cmp.felk.cvut.cz/~tylecr1/facade/
 
@@ -67,21 +77,13 @@ day-night: http://www.cs.mun.ca/~yz7241/dataset/
 ![day2night](https://github.com/duxingren14/DualGAN/blob/master/5.PNG)
 ![day2night](https://github.com/duxingren14/DualGAN/blob/master/6.PNG)
 
- 
-oil         oil2chinese       oil2chinese2oil     oil         oil2chinese       oil2chinese2oil  
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_realA.png)
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_A2B.png)
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_1_A2B2A.png)
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_realA.png)
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_A2B.png)
-![oil2chinese](https://github.com/duxingren14/DualGAN/blob/master/A_3_A2B2A.png)
-
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_realB.png)
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_B2A.png)
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1161_B2A2B.png)
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_realB.png)
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_B2A.png)
-![chinese2oil](https://github.com/duxingren14/DualGAN/blob/master/B_1143_B2A2B.png)
+![da2ni](https://github.com/duxingren14/DualGAN/blob/master/da2ni.png)
+![la2ph](https://github.com/duxingren14/DualGAN/blob/master/la2ph.png)
+![ph2la](https://github.com/duxingren14/DualGAN/blob/master/ph2la.png)
+![sk2ph](https://github.com/duxingren14/DualGAN/blob/master/sk2ph.png)
+![ph2sk](https://github.com/duxingren14/DualGAN/blob/master/ph2sk.png)
+![ch2oi](https://github.com/duxingren14/DualGAN/blob/master/ch2oi.png)
+![oi2ch](https://github.com/duxingren14/DualGAN/blob/master/oi2ch.png)
 
 # Acknowledgments
 

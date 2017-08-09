@@ -111,11 +111,11 @@ class DualNet(object):
         Ag, A2B2A_imgs, A2B_imgs = self.sess.run([self.A_loss, self.A2B2A, self.A2B], feed_dict={self.real_A: sample_A_imgs, self.real_B: sample_B_imgs})
         Bg, B2A2B_imgs, B2A_imgs = self.sess.run([self.B_loss, self.B2A2B, self.B2A], feed_dict={self.real_A: sample_A_imgs, self.real_B: sample_B_imgs})
 
-        save_images(A2B_imgs, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_A2B.png'.format(sample_dir,self.dir_name , epoch_idx, batch_idx))
-        save_images(A2B2A_imgs, [self.batch_size,1],    './{}/{}/{:06d}_{:04d}_A2B2A.png'.format(sample_dir,self.dir_name, epoch_idx,  batch_idx))
+        save_images(A2B_imgs, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_A2B.jpg'.format(sample_dir,self.dir_name , epoch_idx, batch_idx))
+        save_images(A2B2A_imgs, [self.batch_size,1],    './{}/{}/{:06d}_{:04d}_A2B2A.jpg'.format(sample_dir,self.dir_name, epoch_idx,  batch_idx))
         
-        save_images(B2A_imgs, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_B2A.png'.format(sample_dir,self.dir_name, epoch_idx, batch_idx))
-        save_images(B2A2B_imgs, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_B2A2B.png'.format(sample_dir,self.dir_name, epoch_idx, batch_idx))
+        save_images(B2A_imgs, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_B2A.jpg'.format(sample_dir,self.dir_name, epoch_idx, batch_idx))
+        save_images(B2A2B_imgs, [self.batch_size,1], './{}/{}/{:06d}_{:04d}_B2A2B.jpg'.format(sample_dir,self.dir_name, epoch_idx, batch_idx))
         
         print("[Sample] A_loss: {:.8f}, B_loss: {:.8f}".format(Ag, Bg))
 
@@ -358,16 +358,16 @@ class DualNet(object):
                 filename_o = test_files[i*self.batch_size].split('/')[-1].split('.')[0]
                 print(filename_o)
                 idx = i+1
-                A_imgs = np.reshape(np.array(sample_images[i]), (self.batch_size,self.image_size, self.image_size,-1))
+                A_imgs = np.reshape(np.array(test_imgs[i]), (self.batch_size,self.image_size, self.image_size,-1))
                 print("testing A image %d"%(idx))
                 print(A_imgs.shape)
                 A2B_imgs, A2B2A_imgs = self.sess.run(
                     [self.A2B, self.A2B2A],
                     feed_dict={self.real_A: A_imgs}
                     )
-                save_images(A_imgs, [self.batch_size, 1], test_path+filename_o+'_realA.png')
-                save_images(A2B_imgs, [self.batch_size, 1], test_path+filename_o+'_A2B.png')
-                save_images(A2B2A_imgs, [self.batch_size, 1], test_path+filename_o+'_A2B2A.png')
+                save_images(A_imgs, [self.batch_size, 1], test_path+filename_o+'_realA.jpg')
+                save_images(A2B_imgs, [self.batch_size, 1], test_path+filename_o+'_A2B.jpg')
+                save_images(A2B2A_imgs, [self.batch_size, 1], test_path+filename_o+'_A2B2A.jpg')
         elif type=='B':
             for i in xrange(0, len(test_files)//self.batch_size):
                 filename_o = test_files[i*self.batch_size].split('/')[-1].split('.')[0]
@@ -378,6 +378,6 @@ class DualNet(object):
                     [self.B2A, self.B2A2B],
                     feed_dict={self.real_B:B_imgs}
                     )
-                save_images(B_imgs, [self.batch_size, 1],test_path+filename_o+'_realB.png')
-                save_images(B2A_imgs, [self.batch_size, 1],test_path+filename_o+'_B2A.png')
-                save_images(B2A2B_imgs, [self.batch_size, 1],test_path+filename_o+'_B2A2B.png')
+                save_images(B_imgs, [self.batch_size, 1],test_path+filename_o+'_realB.jpg')
+                save_images(B2A_imgs, [self.batch_size, 1],test_path+filename_o+'_B2A.jpg')
+                save_images(B2A2B_imgs, [self.batch_size, 1],test_path+filename_o+'_B2A2B.jpg')
