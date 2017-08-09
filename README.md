@@ -1,64 +1,70 @@
 
- # the codes are based on the ICCV paper about DualGAN
+ # ICCV paper of DualGAN
 <a href="https://arxiv.org/abs/1704.02510">DualGAN: unsupervised dual learning for image-to-image translation</a>
+
+please cite the paper, if the codes has been used for your research.
 
 # architecture of DualGAN
 
 ![architecture](https://github.com/duxingren14/DualGAN/blob/master/0.png)
 
-
-
 # How to setup
 
 ## Prerequisites
 
-Linux
+-Linux
 
-Python 
+-Python (2.7 or later)
 
-numpy
+-numpy
 
-scipy
+-scipy
 
-NVIDIA GPU + CUDA 8.0 + CuDNNv5.1
+-NVIDIA GPU + CUDA 8.0 + CuDNN v5.1
 
-TensorFlow 1.0
-
+-TensorFlow 1.0
 
 
 # Getting Started
+## steps
+* clone this repo:
 
-Clone this repo:
-
+'''
 git clone https://github.com/duxingren14/DualGAN.git
 
 cd DualGAN
+'''
 
-To download datasets (e.g., sketch-photo), run:
+* download datasets (e.g., sketch-photo), run:
 
+'''
 bash ./datasets/download_dataset.sh sketch-photo
+'''
 
-Train the model:
+* train the model:
 
+'''
 python main.py --phase train --dataset_name sketch-photo --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 1 --B_channels 1
+'''
 
+* test the model:
 
-Test the model:
-
+'''
 python main.py --phase test --dataset_name sketch-photo --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 1 --B_channels 1
+'''
 
-
-
+##optional
 Similarly, run experiments on facades dataset with the following commands:
 
+'''
 bash ./datasets/download_dataset.sh facades
 
 python main.py --phase train --dataset_name facades --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 3 --B_channels 3
 
 python main.py --phase test --dataset_name facades --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 3 --B_channels 3
+'''
 
-
-# Some of Datasets are available from:
+# some datasets can also be downloaded manually from the website. Please cite their papers if you use the data. 
 
 facades: http://cmp.felk.cvut.cz/~tylecr1/facade/
 
