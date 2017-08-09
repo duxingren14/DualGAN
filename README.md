@@ -73,10 +73,7 @@ day-night: http://www.cs.mun.ca/~yz7241/dataset/
 
 # Experimental results:
 
-![day2night](https://github.com/duxingren14/DualGAN/blob/master/1.PNG)
-![day2night](https://github.com/duxingren14/DualGAN/blob/master/5.PNG)
 ![day2night](https://github.com/duxingren14/DualGAN/blob/master/6.PNG)
-
 ![da2ni](https://github.com/duxingren14/DualGAN/blob/master/da2ni.png)
 ![la2ph](https://github.com/duxingren14/DualGAN/blob/master/la2ph.png)
 ![ph2la](https://github.com/duxingren14/DualGAN/blob/master/ph2la.png)
