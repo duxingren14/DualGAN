@@ -12,59 +12,63 @@ please cite the paper, if the codes has been used for your research.
 
 ## Prerequisites
 
--Linux
+*Linux
 
--Python (2.7 or later)
+*Python (2.7 or later)
 
--numpy
+*numpy
 
--scipy
+*scipy
 
--NVIDIA GPU + CUDA 8.0 + CuDNN v5.1
+*NVIDIA GPU + CUDA 8.0 + CuDNN v5.1
 
--TensorFlow 1.0
+*TensorFlow 1.0 or later
 
 
 # Getting Started
 ## steps
+
 * clone this repo:
 
-'''
+```
 git clone https://github.com/duxingren14/DualGAN.git
 
 cd DualGAN
-'''
+```
 
 * download datasets (e.g., sketch-photo), run:
 
-'''
+```
 bash ./datasets/download_dataset.sh sketch-photo
-'''
+```
 
 * train the model:
 
-'''
+```
 python main.py --phase train --dataset_name sketch-photo --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 1 --B_channels 1
-'''
+```
 
 * test the model:
 
-'''
+```
 python main.py --phase test --dataset_name sketch-photo --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 1 --B_channels 1
-'''
+```
 
 ##optional
+
 Similarly, run experiments on facades dataset with the following commands:
 
-'''
+```
 bash ./datasets/download_dataset.sh facades
 
 python main.py --phase train --dataset_name facades --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 3 --B_channels 3
 
 python main.py --phase test --dataset_name facades --image_size 256 --epoch 45 --lambda_A 20.0 --lambda_B 20.0 --A_channels 3 --B_channels 3
-'''
+```
 
-# some datasets can also be downloaded manually from the website. Please cite their papers if you use the data. 
+# datasets
+
+some datasets can also be downloaded manually from the website. Please cite their papers if you use the data. 
 
 facades: http://cmp.felk.cvut.cz/~tylecr1/facade/
 
