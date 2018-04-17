@@ -74,7 +74,7 @@ facades: http://cmp.felk.cvut.cz/~tylecr1/facade/
 
 sketch: http://mmlab.ie.cuhk.edu.hk/archive/cufsf/
 
-maps: https://mega.nz/#!r8xwCBCD!lNBrY_2QO6pyUJziGj7ikPheUL_yXA8xGXFlM3GPL3c
+maps: http://www.cs.mun.ca/~yz7241/dataset/maps.zip
 
 oil-chinese:  http://www.cs.mun.ca/~yz7241/, jump to http://www.cs.mun.ca/~yz7241/dataset/
 
