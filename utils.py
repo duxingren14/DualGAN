@@ -2,18 +2,13 @@
 Some codes from https://github.com/Newmu/dcgan_code
 """
 from __future__ import division
-import math
-import json
 import random
-import pprint
-import scipy.misc
+import cv2
 import numpy as np
 import os
 from time import gmtime, strftime
 
-#pp = pprint.PrettyPrinter()
 
-#get_stddev = lambda x, k_h, k_w: 1/math.sqrt(k_w*k_h*x.get_shape()[-1])
 
     
 def load_data(image_path, flip=False, is_test=False, image_size = 128):
@@ -30,7 +25,7 @@ def load_image(image_path):
     return img
 
 def preprocess_img(img, img_size=128, flip=False, is_test=False):
-    img = scipy.misc.imresize(img, [img_size, img_size])
+    img = cv2.resize(img, (img_size, img_size))
     if (not is_test) and flip and np.random.random() > 0.5:
         img = np.fliplr(img)
     return img
@@ -46,9 +41,9 @@ def save_images(images, size, image_path):
 
 def imread(path, is_grayscale = False):
     if (is_grayscale):
-        return scipy.misc.imread(path, flatten = True)#.astype(np.float)
+        return cv2.imread(path, flatten = True)#.astype(np.float)
     else:
-        return scipy.misc.imread(path)#.astype(np.float)
+        return cv2.imread(path)#.astype(np.float)
 
 def merge_images(images, size):
     return inverse_transform(images)
@@ -70,7 +65,7 @@ def merge(images, size):
         return img.astype(np.uint8)
 
 def imsave(images, size, path):
-    return scipy.misc.imsave(path, merge(images, size))
+    return cv2.imwrite(path, merge(images, size))
 
 def transform(image, npx=64, is_crop=True, resize_w=64):
     # npx : # of pixels width/height of image

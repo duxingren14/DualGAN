@@ -12,6 +12,8 @@ please cite the paper, if the codes has been used for your research.
 
 ## Prerequisites
 
+* Linux
+
 * Python (2.7 or later)
 
 * numpy
@@ -21,8 +23,6 @@ please cite the paper, if the codes has been used for your research.
 * NVIDIA GPU + CUDA 8.0 + CuDNN v5.1
 
 * TensorFlow 1.0 or later
-
-* unzip
 
 
 # Getting Started
@@ -74,7 +74,7 @@ facades: http://cmp.felk.cvut.cz/~tylecr1/facade/
 
 sketch: http://mmlab.ie.cuhk.edu.hk/archive/cufsf/
 
-maps: http://www.cs.mun.ca/~yz7241/dataset/maps.zip
+maps: https://mega.nz/#!r8xwCBCD!lNBrY_2QO6pyUJziGj7ikPheUL_yXA8xGXFlM3GPL3c
 
 oil-chinese:  http://www.cs.mun.ca/~yz7241/, jump to http://www.cs.mun.ca/~yz7241/dataset/
 
