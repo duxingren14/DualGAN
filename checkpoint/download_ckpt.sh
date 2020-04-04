@@ -1,6 +1,6 @@
 DATASET_NAME=$1
 
-if [[ $DATASET_NAME != "day-night" &&  $DATASET_NAME != "oil-chinese" && $DATASET_NAME != "facades" && $DATASET_NAME != "sketch-photo"]]; then
+if [[ $DATASET_NAME != "day-night" &&  $DATASET_NAME != "oil-chinese" && $DATASET_NAME != "facades" && $DATASET_NAME != "sketch-photo" ]]; then
 echo "Usage: bash ./checkpoint/download_ckpt.sh model_name"
 echo "dataset names: facades, day-night, oil-chinese, sketch-photo"
 exit 1

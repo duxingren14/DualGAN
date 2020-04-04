@@ -1,0 +1,14 @@
+__pycache__
+test
+sample
+logs
+checkpoint/backup
+checkpoint/selected
+checkpoint/*lambda*
+checkpoint/*.zip
+datasets/facades
+datasets/backup
+datasets/day-night
+datasets/oil-chinese
+datasets/sketch-photo
+

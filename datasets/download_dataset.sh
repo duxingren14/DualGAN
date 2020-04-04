@@ -6,7 +6,7 @@ echo "dataset names: facades, day-night, oil-chinese, sketch-photo"
 exit 1
 fi
 
-LINK=http://www.cs.mun.ca/~yz7241/dataset/$DATASET_NAME.zip
+LINK=http://www.cs.mun.ca/~yz7241/dualgan/dataset/$DATASET_NAME.zip
 FILE=./datasets/$DATASET_NAME.zip
 DIR=./datasets/$DATASET_NAME/
 if [ -d "datasets" ]; then
