@@ -72,9 +72,11 @@ python main.py --phase train --dataset_name facades --lambda_A 1000.0 --lambda_B
 python main.py --phase test --dataset_name facades --lambda_A 1000.0 --lambda_B 1000.0 --epoch 100
 ```
 
-For thoese who cannot download datasets using the scripts, please try manual downloading from the link as below:
+For thoese who cannot download datasets or pretrained models using the scripts, please try manual downloading from the link as below:
 
 <a href="https://drive.google.com/drive/folders/1i7hvUocQ5-u9K1QcD_NjIEKgkTWB7QMh?usp=sharing">all datasets from google drive</a>
+
+<a href="https://drive.google.com/drive/folders/1H6t-JLe12_mP5T6bdwYxtXUQJD1WvL82?usp=sharing">pretrained models from google drive</a>
 
 
 # Experimental results:
