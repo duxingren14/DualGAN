@@ -72,6 +72,11 @@ python main.py --phase train --dataset_name facades --lambda_A 1000.0 --lambda_B
 python main.py --phase test --dataset_name facades --lambda_A 1000.0 --lambda_B 1000.0 --epoch 100
 ```
 
+for thoese who cannot download datasets from using the scripts
+
+<a href="https://drive.google.com/drive/folders/1i7hvUocQ5-u9K1QcD_NjIEKgkTWB7QMh?usp=sharing">all datasets from google drive</a>
+
+
 # Experimental results:
 
 ![day2night](https://github.com/duxingren14/DualGAN/blob/master/6.PNG)
